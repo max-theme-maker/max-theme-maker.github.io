@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Max Theme Maker</title>
+<meta name="description" content="Design color themes for Max (Cycling '74) and save them as .maxtheme files.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="layouts.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand"><img src="favicon.svg" alt="" width="22" height="22"> Max Theme Maker</div>
+  <div class="grp">
+    <select id="baseSelect" title="Open a theme"></select>
+    <button id="importBtn" title="Open a .maxtheme file from anywhere">Open file…</button>
+    <input id="importFile" type="file" accept=".maxtheme,.json" hidden>
+  </div>
+  <div class="grp">
+    <button id="undoBtn" title="Undo (⌘Z)" aria-label="Undo">↶</button>
+    <button id="redoBtn" title="Redo (⇧⌘Z)" aria-label="Redo">↷</button>
+  </div>
+  <div class="grp grow">
+    <input id="themeName" type="text" spellcheck="false" placeholder="my-theme" aria-label="Theme name">
+    <button id="saveBtn" class="primary" title="Save (⌘S)">Save to Max</button>
+    <button id="downloadBtn" title="Download the .maxtheme file">Download</button>
+  </div>
+  <div class="grp">
+    <span class="muted small">Layout</span>
+    <div class="seg" id="layoutSeg">
+      <button data-l="a" title="Large preview; all colors in a drawer">Preview</button>
+      <button data-l="b" title="Every color as a swatch, next to the preview">Swatches</button>
+      <button data-l="c" title="One area of Max at a time">Areas</button>
+    </div>
+    <button id="drawerBtn" title="Show or hide the color list">All colors</button>
+    <button id="helpBtn" title="How it works" aria-label="Help">?</button>
+  </div>
+</header>
+
+<nav id="areaTabs" class="area-tabs"></nav>
+
+<div id="main">
+  <aside id="editor">
+    <div class="ed-tools">
+      <input id="search" type="search" placeholder="Search: label, id, category…" spellcheck="false">
+      <label class="chk" title="Also show colors Max no longer uses"><input id="showUnused" type="checkbox"> unused</label>
+    </div>
+    <details id="genPanel" class="card">
+      <summary>Generator <small>— Max's own theme engine: 13 core colors → the whole theme</small></summary>
+      <div id="genBody"></div>
+    </details>
+    <details id="globalPanel" class="card">
+      <summary>Adjust all <small>— hue, saturation, lightness, contrast</small></summary>
+      <div id="globalBody"></div>
+    </details>
+    <div id="list"></div>
+  </aside>
+
+  <section id="viewer">
+    <div class="pv-bar">
+      <div class="seg" id="lockSeg">
+        <button data-v="locked" class="on">Locked</button>
+        <button data-v="unlocked">Edit mode</button>
+      </div>
+      <label class="chk"><input id="annoChk" type="checkbox" checked> labels</label>
+      <label class="chk"><input id="flashChk" type="checkbox" checked> highlight on hover</label>
+      <span class="pv-spacer"></span>
+      <span id="coverage" class="muted"></span>
+      <label class="zoom">zoom <input id="zoom" type="range" min="50" max="130" value="100"></label>
+    </div>
+    <div id="pvScroll"><div id="pv" class="pv locked"></div></div>
+  </section>
+</div>
+
+<div id="connect" class="connect" hidden>
+  <div class="connect-card">
+    <img src="favicon.svg" alt="" width="56" height="56">
+    <h1>Max Theme Maker</h1>
+    <p>Design color themes for Max and save them as <code>.maxtheme</code> files. Every one of Max's ~280 interface colors can be edited, with a live preview of the whole interface.</p>
+    <h2>1. Connect your Max</h2>
+    <p>The themes that ship with Max and its theme engine are read from your own copy of Max. Nothing is uploaded: everything stays in your browser.</p>
+    <p>Click below and choose the <b>interfaces</b> folder inside Max. In the macOS file dialog, press <kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd> and paste:</p>
+    <div class="pathline"><code id="maxPath">/Applications/Max.app/Contents/Resources/C74/interfaces</code><button id="copyPath">Copy</button></div>
+    <p class="muted small">If your Max app has another name (for example <i>Max 9.app</i>), adjust the path. On Windows: <code>C:\Program Files\Cycling '74\Max 9\resources\interfaces</code>.</p>
+    <button id="connectBtn" class="primary big">Choose the interfaces folder…</button>
+    <input id="connectInput" type="file" webkitdirectory multiple hidden>
+    <p id="connectMsg" class="muted small"></p>
+  </div>
+</div>
+
+<div id="help" class="connect" hidden>
+  <div class="connect-card left">
+    <button class="x" id="helpClose" aria-label="Close">×</button>
+    <h1>How it works</h1>
+    <h2>Edit</h2>
+    <ul>
+      <li>Click anything in the preview to edit the colors it uses.</li>
+      <li>The <b>Generator</b> rebuilds the whole theme from 13 core colors, with Max's own engine.</li>
+      <li><b>Adjust all</b> shifts hue, saturation, lightness or contrast of every color at once.</li>
+      <li>Colors you edit by hand are marked <i>pinned</i>: the generator and Adjust all leave them alone.</li>
+    </ul>
+    <h2>Save</h2>
+    <ul>
+      <li><b>Save to Max</b> (Chrome, Edge, Opera): choose your <code>Documents/Max 9/Packages</code> folder once. Themes go to <code>Packages/Custom Themes/interfaces/themes</code>.</li>
+      <li>Other browsers: <b>Download</b>, then move the file to <code>Documents/Max 9/Packages/Custom Themes/interfaces/themes</code>.</li>
+      <li>Restart Max, then pick the theme in <b>Preferences › Interface Color Theme</b>.</li>
+    </ul>
+    <h2>Layouts</h2>
+    <ul>
+      <li><b>Preview</b>: the interface fills the page; the list of all colors is in a drawer.</li>
+      <li><b>Swatches</b>: every color as a small swatch, grouped by area, next to the preview.</li>
+      <li><b>Areas</b>: one part of Max at a time, with only its colors.</li>
+    </ul>
+    <p class="muted small">Not affiliated with Cycling '74. Max is a trademark of Cycling '74. Themes and the theme engine are read from your own installation and never redistributed.</p>
+    <p><button id="saveFolderBtn">Change save folder…</button> <button id="reconnectBtn">Connect another Max…</button> <button id="forgetBtn">Forget connected Max</button></p>
+  </div>
+</div>
+
+<div id="pop" class="pop" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="preview.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
