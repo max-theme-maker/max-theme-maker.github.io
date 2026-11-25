@@ -664,7 +664,17 @@
       const c = $(`#list .chip[data-tok="${CSS.escape(tok)}"]`);
       if (c) { c.classList.add("hit"); first = first || c; }
     }
-    if (first) first.scrollIntoView({ block: "center", behavior: "smooth" });
+    // scroll the list itself only: scrollIntoView would also scroll the page sideways
+    // to bring the hidden drawer (Preview layout) into view, pushing the preview off screen
+    if (first) {
+      const box = first.closest("#list, #editor") || $("#list");
+      const sc = [first.parentElement, ...(function* (n) { while ((n = n.parentElement) && n !== box.parentElement) yield n; })(first.parentElement)]
+        .find((n) => n && n.scrollHeight > n.clientHeight && /auto|scroll/.test(getComputedStyle(n).overflowY));
+      if (sc) {
+        const y = first.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+        sc.scrollTo({ top: y - sc.clientHeight / 2 + first.offsetHeight / 2, behavior: "smooth" });
+      }
+    }
   }
 
   /* ================================================================== */
@@ -1029,7 +1039,7 @@
     for (const seg of path.split("/").filter(Boolean)) { dir = await entryDir(dir, seg); if (!dir) return null; }
     return dir;
   }
-  async function sourceFromEntry(root) {
+  async function sourceFromEntry(root, depth = 0) {
     for (const rel of INTERFACES_IN) {
       const dir = await walkTo(root, rel);
       const themes = dir && (await entryDir(dir, "themes"));
@@ -1043,16 +1053,21 @@
       const c = await entryFile(dir, "theme_constructor.js");
       if (c) files.push({ webkitRelativePath: "interfaces/theme_constructor.js", name: c.name, text: () => c.text() });
       const src = await sourceFromFiles(files);
-      if (src) return src;
+      if (src) return [src];
     }
-    return null;
+    // a folder holding several Max installations: Cycling '74 on Windows, Applications on a Mac
+    if (depth > 0) return [];
+    const kids = (await entryChildren(root)).filter((e) => e.isDirectory && /^max\b/i.test(e.name));
+    return (await Promise.all(kids.map((k) => sourceFromEntry(k, 1)))).flat();
   }
   async function connectFromDrop(items, replace) {
     const roots = [...items].map((i) => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter((e) => e && e.isDirectory);
-    if (!roots.length) return showConnect("The browser did not hand over a folder. In the Finder, right-click the Max app › Show Package Contents, open Contents › Resources › C74, and drag the interfaces folder here.");
+    if (!roots.length) return showConnect(document.body.dataset.os === "win"
+      ? "Drop a folder: interfaces, Max 9, or Cycling '74."
+      : "The browser did not hand over a folder. In the Finder, right-click the Max app › Show Package Contents, open Contents › Resources › C74, and drag the interfaces folder here.");
     showConnect("Reading…");
-    const found = (await Promise.all(roots.map(sourceFromEntry))).filter(Boolean);
-    if (!found.length) return showConnect("No Max themes found there. Drop the Max app itself (from Applications), or its interfaces folder.");
+    const found = (await Promise.all(roots.map((r) => sourceFromEntry(r)))).flat();
+    if (!found.length) return showConnect((document.body.dataset.os === "win" ? "No Max themes found there. Drop the interfaces folder (in resources), the Max 9 folder or the Cycling '74 folder." : "No Max themes found there. Drop the Max app itself (from Applications), or its interfaces folder."));
     return addSources(found, replace);
   }
 
@@ -1287,7 +1302,11 @@
   $("#saveBtn").title = canSaveToFolder ? "Save into your Max Packages folder (⌘S)" : "Your browser can't write to folders: the theme is downloaded (⌘S)";
   $("#downloadBtn").onclick = download;
 
-  $("#connectBtn").onclick = () => $("#connectInput").click();
+  $$(".connectBtn").forEach((b) => (b.onclick = () => $("#connectInput").click()));
+  // macOS or Windows instructions (Max runs on both; anything else gets the Mac ones and the switch)
+  const setOS = (os) => { document.body.dataset.os = os; };
+  setOS(/win/i.test(navigator.userAgentData?.platform || navigator.platform || navigator.userAgent) ? "win" : "mac");
+  $$(".os-switch a").forEach((a) => (a.onclick = (e) => { e.preventDefault(); setOS(a.dataset.os); }));
   $("#connectInput").onchange = (e) => { if (e.target.files.length) connectFrom(e.target.files, S.replaceSources); };
   // dropping the Max app (or its interfaces folder) anywhere while the connect screen is open
   // (a file dropped anywhere else must never make the browser open it in place of the page)
@@ -1305,7 +1324,10 @@
     $("#connect").classList.toggle("dropping", false);
     if (!$("#connect").hidden) connectFromDrop(e.dataTransfer.items, S.replaceSources);
   }, true);
-  $("#copyPath").onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText($("#maxPath").textContent); $("#copyPath").textContent = "Copied"; };
+  $$(".copyPath").forEach((b) => (b.onclick = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(b.previousElementSibling.textContent);
+    b.textContent = "Copied";
+  }));
   $("#helpBtn").onclick = () => ($("#help").hidden = false);
   $("#helpClose").onclick = () => ($("#help").hidden = true);
   $("#help").onclick = (e) => { if (e.target.id === "help") $("#help").hidden = true; };

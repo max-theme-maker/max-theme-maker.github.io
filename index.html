@@ -6,8 +6,8 @@
 <title>Max Theme Maker</title>
 <meta name="description" content="Design color themes for Max (Cycling '74) and save them as .maxtheme files.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=2">
-<link rel="stylesheet" href="layouts.css?v=2">
+<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="layouts.css?v=4">
 </head>
 <body>
 <header id="top">
@@ -80,11 +80,20 @@
     <p>Design color themes for Max and save them as <code>.maxtheme</code> files. Every one of Max's ~280 interface colors can be edited, with a live preview of the whole interface.</p>
     <h2>1. Connect your Max</h2>
     <p>The themes that ship with Max and its theme engine are read from your own copy of Max. Nothing is uploaded: everything stays in your browser.</p>
-    <div class="dropzone"><b>Drag your Max app here</b><br><span class="muted small">from the Applications folder in the Finder. Several versions of Max can be dropped at once.</span></div>
-    <p class="muted small">Or choose its <b>interfaces</b> folder. The macOS file dialog does not open apps, so press <kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd> in it and paste this path (with your app's name, for example <i>Max 9.app</i>):</p>
-    <div class="pathline"><code id="maxPath">/Applications/Max.app/Contents/Resources/C74/interfaces</code><button id="copyPath">Copy</button></div>
-    <p class="muted small">On Windows: <code>C:\Program Files\Cycling '74\Max 9\resources\interfaces</code>.</p>
-    <button id="connectBtn">Choose the interfaces folder…</button>
+    <div class="os-only mac">
+      <div class="dropzone"><b>Drag your Max app here</b><br><span class="muted small">from the Applications folder in the Finder. Several versions of Max can be dropped at once.</span></div>
+      <p class="muted small">Or choose its <b>interfaces</b> folder. The macOS file dialog does not open apps, so press <kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd> in it and paste this path (with your app's name, for example <i>Max 9.app</i>):</p>
+      <div class="pathline"><code class="maxpath">/Applications/Max.app/Contents/Resources/C74/interfaces</code><button class="copyPath">Copy</button></div>
+      <button class="connectBtn">Choose the interfaces folder…</button>
+    </div>
+    <div class="os-only win">
+      <p>Click below and choose the <b>interfaces</b> folder of Max. In the folder dialog, click the address bar (or press <kbd>Alt</kbd><kbd>D</kbd>), paste this path and press <kbd>Enter</kbd>, then <b>Select Folder</b>:</p>
+      <div class="pathline"><code class="maxpath">C:\Program Files\Cycling '74\Max 9\resources\interfaces</code><button class="copyPath">Copy</button></div>
+      <p class="muted small">For Max 8, replace <i>Max 9</i> with <i>Max 8</i>. If Max was installed somewhere else, look for its <i>resources\interfaces</i> folder.</p>
+      <button class="connectBtn primary big">Choose the interfaces folder…</button>
+      <div class="dropzone small-drop"><b>Or drag a folder here</b><br><span class="muted small">the <i>interfaces</i> folder, a <i>Max 9</i> folder, or the whole <i>Cycling '74</i> folder from <i>C:\Program Files</i> to add every installed Max at once.</span></div>
+    </div>
+    <p class="muted small os-switch"><a href="#" data-os="win">Using Windows?</a><a href="#" data-os="mac">Using a Mac?</a></p>
     <input id="connectInput" type="file" webkitdirectory multiple hidden>
     <p id="connectMsg" class="muted small"></p>
   </div>
@@ -121,7 +130,7 @@
 <div id="pop" class="pop" hidden></div>
 <div id="toast" class="toast" hidden></div>
 
-<script src="preview.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="preview.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

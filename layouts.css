@@ -107,3 +107,13 @@ button.big { font-size: 15px; padding: 9px 20px; margin-top: 12px; }
 .dropzone { border: 2px dashed var(--line); border-radius: 12px; padding: 22px 16px; margin: 12px 0 14px; line-height: 1.6; }
 .dropzone b { font-size: 15px; }
 .connect.dropping .dropzone { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* the connect screen speaks to macOS or Windows */
+body[data-os="mac"] .os-only.win, body[data-os="win"] .os-only.mac { display: none; }
+body[data-os="mac"] .os-switch [data-os="mac"], body[data-os="win"] .os-switch [data-os="win"] { display: none; }
+.os-switch { margin-top: 14px; }
+.os-switch a { color: var(--muted); }
+.dropzone.small-drop { padding: 12px 14px; margin-top: 16px; }
+
+/* the drawer waits off screen: nothing may scroll the page sideways to reach it */
+#main { overflow: clip; }
