@@ -1049,7 +1049,7 @@
   }
   async function connectFromDrop(items, replace) {
     const roots = [...items].map((i) => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter((e) => e && e.isDirectory);
-    if (!roots.length) return showConnect("Drop a folder: the Max app, or its interfaces folder.");
+    if (!roots.length) return showConnect("The browser did not hand over a folder. In the Finder, right-click the Max app › Show Package Contents, open Contents › Resources › C74, and drag the interfaces folder here.");
     showConnect("Reading…");
     const found = (await Promise.all(roots.map(sourceFromEntry))).filter(Boolean);
     if (!found.length) return showConnect("No Max themes found there. Drop the Max app itself (from Applications), or its interfaces folder.");
@@ -1290,18 +1290,21 @@
   $("#connectBtn").onclick = () => $("#connectInput").click();
   $("#connectInput").onchange = (e) => { if (e.target.files.length) connectFrom(e.target.files, S.replaceSources); };
   // dropping the Max app (or its interfaces folder) anywhere while the connect screen is open
-  document.addEventListener("dragover", (e) => {
-    if ($("#connect").hidden) return;
-    e.preventDefault(); e.dataTransfer.dropEffect = "copy";
-    $("#connect").classList.add("dropping");
-  });
-  document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) $("#connect").classList.toggle("dropping", false); });
-  document.addEventListener("drop", (e) => {
-    if ($("#connect").hidden) return;
+  // (a file dropped anywhere else must never make the browser open it in place of the page)
+  const isFileDrag = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
+  for (const t of ["dragenter", "dragover"]) window.addEventListener(t, (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = $("#connect").hidden ? "none" : "copy";
+    if (!$("#connect").hidden) $("#connect").classList.add("dropping");
+  }, true);
+  window.addEventListener("dragleave", (e) => { if (!e.relatedTarget) $("#connect").classList.toggle("dropping", false); }, true);
+  window.addEventListener("drop", (e) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     $("#connect").classList.toggle("dropping", false);
-    connectFromDrop(e.dataTransfer.items, S.replaceSources);
-  });
+    if (!$("#connect").hidden) connectFromDrop(e.dataTransfer.items, S.replaceSources);
+  }, true);
   $("#copyPath").onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText($("#maxPath").textContent); $("#copyPath").textContent = "Copied"; };
   $("#helpBtn").onclick = () => ($("#help").hidden = false);
   $("#helpClose").onclick = () => ($("#help").hidden = true);
