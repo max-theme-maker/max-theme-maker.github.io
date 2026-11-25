@@ -1002,11 +1002,58 @@
   }
   async function connectFrom(files, replace) {
     const src = await sourceFromFiles([...files]);
-    if (!src) return showConnect("That folder has no themes/default.maxtheme. Choose the “interfaces” folder inside the Max app.");
+    if (!src) return showConnect("That folder has no themes/default.maxtheme. Choose the “interfaces” folder inside the Max app, or drag the Max app onto this page.");
+    return addSources([src], replace);
+  }
+  async function addSources(list, replace) {
     let sources = replace ? [] : ((await idb.get("sources")) || []);
-    sources = [src, ...sources.filter((s) => s.name !== src.name)];
+    for (const src of list) sources = [src, ...sources.filter((s) => s.name !== src.name)];
     await idb.set("sources", sources);
     location.reload();
+  }
+
+  // Drag and drop: the Max app itself (macOS file dialogs will not open an app bundle,
+  // but a dropped bundle is an ordinary folder), its interfaces folder, or a Max folder on Windows.
+  const INTERFACES_IN = ["", "interfaces", "Contents/Resources/C74/interfaces", "resources/interfaces", "C74/interfaces"];
+  const entryDir = (dir, name) => new Promise((ok) => dir.getDirectory(name, {}, ok, () => ok(null)));
+  const entryFile = (dir, name) => new Promise((ok) => dir.getFile(name, {}, (e) => e.file(ok, () => ok(null)), () => ok(null)));
+  async function entryChildren(dir) {
+    const r = dir.createReader(), out = [];
+    for (;;) {
+      const batch = await new Promise((ok) => r.readEntries(ok, () => ok([])));
+      if (!batch.length) return out;
+      out.push(...batch);
+    }
+  }
+  async function walkTo(dir, path) {
+    for (const seg of path.split("/").filter(Boolean)) { dir = await entryDir(dir, seg); if (!dir) return null; }
+    return dir;
+  }
+  async function sourceFromEntry(root) {
+    for (const rel of INTERFACES_IN) {
+      const dir = await walkTo(root, rel);
+      const themes = dir && (await entryDir(dir, "themes"));
+      if (!themes) continue;
+      const files = [];
+      for (const e of await entryChildren(themes)) {
+        if (!e.isFile || !/\.(maxtheme|maxstx)$/.test(e.name)) continue;
+        const f = await new Promise((ok) => e.file(ok, () => ok(null)));
+        if (f) files.push({ webkitRelativePath: "interfaces/themes/" + e.name, name: e.name, text: () => f.text() });
+      }
+      const c = await entryFile(dir, "theme_constructor.js");
+      if (c) files.push({ webkitRelativePath: "interfaces/theme_constructor.js", name: c.name, text: () => c.text() });
+      const src = await sourceFromFiles(files);
+      if (src) return src;
+    }
+    return null;
+  }
+  async function connectFromDrop(items, replace) {
+    const roots = [...items].map((i) => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter((e) => e && e.isDirectory);
+    if (!roots.length) return showConnect("Drop a folder: the Max app, or its interfaces folder.");
+    showConnect("Reading…");
+    const found = (await Promise.all(roots.map(sourceFromEntry))).filter(Boolean);
+    if (!found.length) return showConnect("No Max themes found there. Drop the Max app itself (from Applications), or its interfaces folder.");
+    return addSources(found, replace);
   }
 
   /* ================================================================== */
@@ -1242,6 +1289,19 @@
 
   $("#connectBtn").onclick = () => $("#connectInput").click();
   $("#connectInput").onchange = (e) => { if (e.target.files.length) connectFrom(e.target.files, S.replaceSources); };
+  // dropping the Max app (or its interfaces folder) anywhere while the connect screen is open
+  document.addEventListener("dragover", (e) => {
+    if ($("#connect").hidden) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+    $("#connect").classList.add("dropping");
+  });
+  document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) $("#connect").classList.toggle("dropping", false); });
+  document.addEventListener("drop", (e) => {
+    if ($("#connect").hidden) return;
+    e.preventDefault();
+    $("#connect").classList.toggle("dropping", false);
+    connectFromDrop(e.dataTransfer.items, S.replaceSources);
+  });
   $("#copyPath").onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText($("#maxPath").textContent); $("#copyPath").textContent = "Copied"; };
   $("#helpBtn").onclick = () => ($("#help").hidden = false);
   $("#helpClose").onclick = () => ($("#help").hidden = true);

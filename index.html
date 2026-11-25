@@ -80,10 +80,11 @@
     <p>Design color themes for Max and save them as <code>.maxtheme</code> files. Every one of Max's ~280 interface colors can be edited, with a live preview of the whole interface.</p>
     <h2>1. Connect your Max</h2>
     <p>The themes that ship with Max and its theme engine are read from your own copy of Max. Nothing is uploaded: everything stays in your browser.</p>
-    <p>Click below and choose the <b>interfaces</b> folder inside Max. In the macOS file dialog, press <kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd> and paste:</p>
+    <div class="dropzone"><b>Drag your Max app here</b><br><span class="muted small">from the Applications folder in the Finder. Several versions of Max can be dropped at once.</span></div>
+    <p class="muted small">Or choose its <b>interfaces</b> folder. The macOS file dialog does not open apps, so press <kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd> in it and paste this path (with your app's name, for example <i>Max 9.app</i>):</p>
     <div class="pathline"><code id="maxPath">/Applications/Max.app/Contents/Resources/C74/interfaces</code><button id="copyPath">Copy</button></div>
-    <p class="muted small">If your Max app has another name (for example <i>Max 9.app</i>), adjust the path. On Windows: <code>C:\Program Files\Cycling '74\Max 9\resources\interfaces</code>.</p>
-    <button id="connectBtn" class="primary big">Choose the interfaces folder…</button>
+    <p class="muted small">On Windows: <code>C:\Program Files\Cycling '74\Max 9\resources\interfaces</code>.</p>
+    <button id="connectBtn">Choose the interfaces folder…</button>
     <input id="connectInput" type="file" webkitdirectory multiple hidden>
     <p id="connectMsg" class="muted small"></p>
   </div>
